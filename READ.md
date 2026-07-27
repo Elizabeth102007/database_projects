@@ -1,119 +1,186 @@
-# Contact Book CLI
+# Contact Manager CLI
 
-A command-line contact management application built with Python and SQLite. The application allows users to create, view, search, update, and delete contacts stored in a local SQLite database.
+A command-line contact management application built with **Python** and **SQLite**. The application allows users to manage a personal contact database by adding, viewing, searching, updating, deleting, and analyzing contacts through SQL queries.
 
-Unlike a file-based contact book that stores data in CSV or JSON files, this project uses a relational database and SQL queries to manage persistent contact records.
+Unlike a file-based contact book that stores information in CSV or JSON files, this project uses a **SQLite relational database**, providing persistent storage, efficient querying, and structured data management.
 
-## How It Works
+---
+
+# How It Works
 
 ```text
 User
- ↓
+   │
+   ▼
 CLI Menu
- ↓
+   │
+   ▼
 Python Application
- ↓
-SQLite Database Connection
- ↓
-contacts.db
+   │
+   ▼
+SQLite Database (contacts.db)
 ```
 
 When the program starts, it:
 
-1. Creates a connection to the SQLite database.
-2. Creates the `contacts` table if it does not already exist.
-3. Displays the available contact management operations.
-4. Allows the user to perform CRUD operations on stored contacts.
+* Connects to a local SQLite database
+* Creates the `contacts` table if it does not already exist
+* Displays an interactive menu
+* Executes SQL queries based on the user's selected operation
+* Automatically saves all changes to the database
 
-## Features
+---
+
+# Features
 
 * Add new contacts
 * View all contacts
-* Search for a contact by name
-* Update contact information
+* Sort contacts alphabetically (ascending or descending)
+* Search contacts using partial name matching
+* Update existing contact information
 * Delete contacts
-* Persistent local data storage
+* Count the total number of contacts
+* Count contacts grouped by city
+* Automatically generate unique contact IDs
+* Persistent data storage using SQLite
 * Automatic database and table creation
-* SQL parameter binding
-* Transaction management using Python's `with connection:` syntax
-* Interactive command-line interface
+* Safe SQL parameter binding
+* Transaction management using context managers
+* Automatic database connection cleanup
 
-## Contact Data
+---
 
-Each contact contains:
+# Contact Information
 
-| Column  | Description                               |
-| ------- | ----------------------------------------- |
-| `id`    | Automatically generated unique identifier |
-| `name`  | Contact's name                            |
-| `phone` | Contact's phone number                    |
-| `email` | Contact's email address                   |
+Each contact stores the following information:
 
-The database table is created with:
+| Field | Description                      |
+| ----- | -------------------------------- |
+| ID    | Auto-generated unique identifier |
+| Name  | Contact's full name              |
+| Phone | Phone number                     |
+| Email | Email address                    |
+| City  | City of residence                |
+
+The table is automatically created using:
 
 ```sql
 CREATE TABLE IF NOT EXISTS contacts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     phone TEXT,
-    email TEXT
+    email TEXT,
+    city TEXT
 );
 ```
 
-## CRUD Operations
+---
 
-This project demonstrates the four fundamental database operations:
+# CRUD Operations
 
-| Operation | SQL Command | Purpose                    |
-| --------- | ----------- | -------------------------- |
-| Create    | `INSERT`    | Add a new contact          |
-| Read      | `SELECT`    | View or search contacts    |
-| Update    | `UPDATE`    | Modify contact information |
-| Delete    | `DELETE`    | Remove a contact           |
+The project demonstrates the four fundamental database operations.
 
-### Create
+| Operation | SQL Command | Purpose                  |
+| --------- | ----------- | ------------------------ |
+| Create    | `INSERT`    | Add new contacts         |
+| Read      | `SELECT`    | View and search contacts |
+| Update    | `UPDATE`    | Modify contact details   |
+| Delete    | `DELETE`    | Remove contacts          |
 
-Users can add a new contact with a name, phone number, and email address.
+---
 
-```sql
-INSERT INTO contacts(name, phone, email)
-VALUES (:name, :phone, :email);
-```
+## Add Contact
 
-### Read
-
-The application can retrieve all contacts:
-
-```sql
-SELECT * FROM contacts;
-```
-
-It can also search for a specific contact by name:
-
-```sql
-SELECT * FROM contacts
-WHERE name = :name;
-```
-
-### Update
-
-Individual contact fields can be updated:
-
-```sql
-UPDATE contacts
-SET name = :name
-WHERE id = :id;
-```
-
-The application supports updating:
+Users can add a contact with:
 
 * Name
 * Phone number
 * Email address
+* City
 
-### Delete
+After insertion, SQLite automatically generates a unique ID using:
 
-Contacts can be removed using their unique ID:
+```sql
+AUTOINCREMENT
+```
+
+The application displays the generated contact ID using:
+
+```python
+cursor.lastrowid
+```
+
+---
+
+## View Contacts
+
+Contacts can be displayed in three different ways:
+
+* Normal order
+* Alphabetical order (A → Z)
+* Reverse alphabetical order (Z → A)
+
+This demonstrates SQL sorting with:
+
+```sql
+ORDER BY name
+```
+
+and
+
+```sql
+ORDER BY name DESC
+```
+
+---
+
+## Search Contacts
+
+Users can search for contacts using part of a name instead of requiring an exact match.
+
+For example, searching:
+
+```
+Ann
+```
+
+can match:
+
+```
+Ann
+Anna
+Annabelle
+Joanne
+```
+
+This is achieved using SQL's `LIKE` operator:
+
+```sql
+SELECT *
+FROM contacts
+WHERE name LIKE :name;
+```
+
+---
+
+## Update Contacts
+
+Users can update individual fields without modifying the entire record.
+
+Supported updates include:
+
+* Name
+* Phone
+* Email
+* City
+
+Each update uses SQL's `UPDATE` statement with parameterized queries.
+
+---
+
+## Delete Contacts
+
+Contacts are deleted using their unique ID.
 
 ```sql
 DELETE FROM contacts
@@ -122,217 +189,233 @@ WHERE id = :id;
 
 ---
 
-## How To Run
+# Contact Statistics
 
-SQLite is included in Python's standard library, so no external package installation is required.
+The application also performs simple database analysis using SQL aggregate functions.
 
-Run the program with:
+## Total Contacts
 
-```bash
-python main.py
+Displays the total number of contacts stored.
+
+Uses:
+
+```sql
+SELECT COUNT(*)
+FROM contacts;
 ```
-
-The `contacts.db` database file will be created automatically when the program runs.
 
 ---
 
-## Example Menu
+## Contacts by City
+
+Groups contacts according to their city and counts how many contacts belong to each city.
+
+Example output:
 
 ```text
-=================CONTACT BOOK CLI===============
+Cairo: 5 contact(s)
+Lagos: 3 contact(s)
+Abuja: 2 contact(s)
+```
+
+This demonstrates SQL aggregation with:
+
+```sql
+SELECT city, COUNT(*)
+FROM contacts
+GROUP BY city;
+```
+
+---
+
+# Database Transactions
+
+Database-modifying operations are wrapped using:
+
+```python
+with connection:
+```
+
+This automatically manages transactions by:
+
+* Committing successful operations
+* Rolling back failed operations when necessary
+
+Operations using transactions include:
+
+* INSERT
+* UPDATE
+* DELETE
+* CREATE TABLE
+
+---
+
+# SQL Parameter Binding
+
+Instead of building SQL statements using string concatenation, the project uses named parameters.
+
+Example:
+
+```python
+params = {
+    "name": name,
+    "phone": phone,
+    "email": email,
+    "city": city
+}
+
+cursor.execute(query, params)
+```
+
+This approach:
+
+* Improves code readability
+* Separates SQL from user input
+* Helps protect against SQL injection attacks
+
+---
+
+# Database Connection Management
+
+The application creates a single database connection at startup:
+
+```python
+connection = sqlite3.connect("contacts.db")
+```
+
+The connection remains open while the application runs and is safely closed using:
+
+```python
+finally:
+    connection.close()
+```
+
+This ensures database resources are released properly, even if an unexpected error occurs.
+
+---
+
+# How To Run
+
+SQLite is included with Python, so no additional database installation is required.
+
+Run the application using:
+
+```bash
+python contact_manager_cli.py
+```
+
+On the first run, SQLite automatically creates:
+
+```
+contacts.db
+```
+
+---
+
+# Example Menu
+
+```text
+================= CONTACT MANAGER CLI =================
 
 1. Add contact
 2. View contacts
 3. Search contact
 4. Update contact
 5. Delete contact
+6. Count contact
+7. Count contacts by city
 0. Exit
 ```
 
-## Example Usage
-
-### Adding a Contact
-
-```text
-Enter your name: Jenny
-Enter your phone: 123456789
-Enter your email address: jenny@example.com
-
-Contact Added successfully
-```
-
-### Viewing Contacts
-
-```text
-(1, 'Jenny', '123456789', 'jenny@example.com')
-(2, 'John', '987654321', 'john@example.com')
-```
-
-### Searching for a Contact
-
-```text
-Enter the name you want to search for: Jenny
-
-(1, 'Jenny', '123456789', 'jenny@example.com')
-```
-
 ---
 
-## Database Connection
-
-The application creates a connection to the SQLite database using:
-
-```python
-def create_connection():
-    return sqlite3.connect("contacts.db")
-```
-
-This creates or opens the local:
+# Project Structure
 
 ```text
-contacts.db
-```
-
-SQLite is a file-based relational database, meaning the entire database is stored locally in a single file.
-
----
-
-## Transactions and `with connection:`
-
-The project uses:
-
-```python
-with connection:
-    cursor.execute(query, params)
-```
-
-for database-changing operations such as `INSERT`, `UPDATE`, and `DELETE`.
-
-This allows SQLite to manage the transaction automatically:
-
-* If the operation succeeds, the changes are committed.
-* If an error occurs, the transaction can be rolled back.
-
-This is one of the important database concepts demonstrated in the project.
-
----
-
-## SQL Parameter Binding
-
-The project uses named parameters instead of directly inserting user input into SQL queries:
-
-```python
-params = {
-    "name": name,
-    "phone": phone,
-    "email": email
-}
-```
-
-Then:
-
-```python
-cursor.execute(query, params)
-```
-
-For example:
-
-```sql
-INSERT INTO contacts(name, phone, email)
-VALUES (:name, :phone, :email);
-```
-
-This is safer and helps prevent SQL injection compared with building SQL queries using string concatenation.
-
----
-
-## Project Structure
-
-```text
-contact-book-cli/
+contact-manager-cli/
 │
-├── main.py
+├── contact_manager_cli.py
 ├── contacts.db
 └── README.md
 ```
 
-### `main.py`
-
-Contains the application logic, including:
-
-* Database connection
-* Table creation
-* Adding contacts
-* Viewing contacts
-* Searching contacts
-* Updating contacts
-* Deleting contacts
-* Menu management
-
-### `contacts.db`
-
-The local SQLite database that stores the contact records.
-
-If the database does not exist, SQLite creates it automatically.
-
 ---
 
-## Topics Covered
+# Topics Covered
 
 * Python
 * SQLite
-* Relational databases
+* Relational Databases
 * SQL
+* CRUD Operations
 * `sqlite3`
-* Database connections
-* Cursors
-* Tables
-* Primary keys
-* `AUTOINCREMENT`
-* `NOT NULL` constraints
-* `INSERT`
-* `SELECT`
-* `UPDATE`
-* `DELETE`
-* SQL parameter binding
+* Database Connections
+* SQL Cursors
 * Transactions
-* Database persistence
-* CRUD operations
-* Command-line interfaces
+* Context Managers
+* Parameterized Queries
+* Primary Keys
+* AUTOINCREMENT
+* Aggregate Functions
+* SQL Sorting
+* SQL Filtering
+* `LIKE`
+* `COUNT`
+* `GROUP BY`
+* `ORDER BY`
+* Database Persistence
+* Command-Line Interfaces (CLI)
 
 ---
 
-## Key Concepts Demonstrated
+# Key Concepts Demonstrated
 
-This project demonstrates the transition from storing application data in files to using a database.
+This project demonstrates how Python applications interact with relational databases to store and manage persistent data.
 
-A file-based application might store data like this:
-
-```text
-Python Application
-       ↓
-CSV / JSON File
-```
-
-This project uses:
+It covers the complete lifecycle of database programming:
 
 ```text
-Python Application
-       ↓
-SQL Query
-       ↓
-SQLite Database
-       ↓
-contacts.db
+Connect
+    ↓
+Create Table
+    ↓
+Insert Records
+    ↓
+Query Records
+    ↓
+Update Records
+    ↓
+Delete Records
+    ↓
+Analyze Data
+    ↓
+Close Connection
 ```
 
-The application also demonstrates how a database-backed application performs CRUD operations:
+It also introduces several SQL concepts beyond basic CRUD operations, including:
 
-```text
-Create  → INSERT
-Read    → SELECT
-Update  → UPDATE
-Delete  → DELETE
-```
+* Sorting records with `ORDER BY`
+* Partial searches using `LIKE`
+* Counting records with `COUNT()`
+* Grouping data with `GROUP BY`
+* Retrieving automatically generated IDs with `lastrowid`
+* Managing transactions with context managers
+* Safely passing user input through parameterized SQL queries
 
-Overall, this project provides practical experience with **Python database programming, SQL queries, SQLite persistence, transactions, and building a complete CRUD command-line application**.
+Overall, this project provides practical experience building a complete **database-driven command-line application** while demonstrating how Python and SQLite work together to create persistent, queryable, and structured data applications.
+
+---
+
+# Future Improvements
+
+* Validate email addresses and phone number formats before saving.
+* Prevent duplicate contacts based on email or phone number.
+* Search by phone number, email, or city in addition to name.
+* Add pagination when displaying large numbers of contacts.
+* Export contacts to CSV or JSON.
+* Import contacts from CSV files.
+* Add advanced filtering (e.g., contacts from a specific city).
+* Support deleting or updating multiple contacts at once.
+* Add timestamps for contact creation and last modification.
+* Build a graphical user interface (GUI) using Tkinter or PyQt.
+* Migrate to a full-featured database system such as PostgreSQL or MySQL for larger datasets.
